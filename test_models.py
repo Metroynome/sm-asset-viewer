@@ -1,0 +1,66 @@
+import struct
+import unittest
+from models import packet_mesh, vif, decode, read_skeleton
+from animations import decode as animation
+
+
+def unpack(cmd, address, values, fmt):
+    raw=b''.join(struct.pack('<'+fmt,*v) for v in values)
+    return struct.pack('<I',(cmd<<24)|(len(values)<<16)|address)+raw+b'\0'*((-len(raw))%4)
+
+
+class ModelsTest(unittest.TestCase):
+    def test_strip_degenerates_and_scale(self):
+        data=unpack(0x65,1,[(0,0)]*5,'2h')+unpack(0x69,4,[(0,0,0),(0,0,0),(2,0,0),(0,2,0),(0,2,0)],'3h')+struct.pack('<I',0x17000000)
+        mesh=packet_mesh(data,0,len(data),0.5,0)[0]
+        self.assertEqual(mesh['indices'],[2,1,3])
+        self.assertEqual(mesh['positions'][2],[1,0,0])
+        with self.assertRaises(ValueError):list(vif(data,0,len(data)-8))
+
+    def test_skin_quantization_and_six_weights(self):
+        data=unpack(0x6e,1,[(0,0,0,0)]*3,'4b')+unpack(0x6d,3,[(0,0,127,0)]*3,'4h')+unpack(0x69,5,[(16384,16384,16384),(18432,16384,16384),(16384,18432,16384)],'3h')
+        m=packet_mesh(data,0,len(data),8/16384,0,skin=True,bones=list(range(6)))[0]
+        self.assertEqual(m['positions'][1],[1,0,0])
+        self.assertEqual(m['weights'][0],[0,0,0,0,1,0])
+        with self.assertRaises(ValueError):decode(b'not a model')
+
+    def test_skin_bind_pivot_uses_mesh_units(self):
+        b=bytearray(152)
+        struct.pack_into('<4I',b,0,0x44444444,1,24,104)
+        inverse=[1,0,0,0,0,1,0,0,0,0,1,0,-0.125,-0.25,0,1]
+        struct.pack_into('<16f',b,24,*inverse)
+        b[24+68]=255
+        struct.pack_into('<12f',b,104,0,0,0,1,1,1,1,0,100,200,0,0)
+        bone=read_skeleton(b,0,8)[0]
+        self.assertEqual(bone['translation'],[1,2,0])
+        self.assertEqual(bone['inverseBind'][12:15],[-1,-2,0])
+        # Rotating about this bind joint must leave the joint itself stationary.
+        pivot=bone['translation']
+        local=[pivot[i]+bone['inverseBind'][12+i] for i in range(3)]
+        rotated=[-local[1]+pivot[0],local[0]+pivot[1],local[2]+pivot[2]]
+        self.assertEqual(rotated,pivot)
+
+    def test_animation_channels(self):
+        b=bytearray(126)
+        struct.pack_into('<IfB',b,0,12,15.0,1)
+        b[12:20]=b'TESTCLIP'
+        struct.pack_into('<I',b,24,76)
+        struct.pack_into('<f',b,52,2)
+        b[59]=1
+        b[80:82]=bytes([2,7])
+        struct.pack_into('<II',b,84,2,92)
+        quaternion=(511<<30)|(511<<20)|(511<<10)|1022
+        for off,t in [(92,64),(109,320)]:
+            struct.pack_into('<h',b,off,t)
+            b[off+2:off+7]=quaternion.to_bytes(5,'big')
+            struct.pack_into('<3hI',b,off+7,8000,-8000,0,(64<<20)|(128<<10)|32)
+        track=animation(b)['clips'][0]['tracks'][0]
+        self.assertEqual(track['bone'],2)
+        self.assertEqual([k['time'] for k in track['frames']],[0.25,1.25])
+        self.assertEqual(track['frames'][0]['rotation'],[0,0,0,1])
+        self.assertEqual(track['frames'][0]['translation'],[1,-1,0])
+        self.assertEqual(track['frames'][0]['scale'],[1,2,0.5])
+        with self.assertRaises(ValueError):animation(b[:-1])
+
+
+if __name__=='__main__':unittest.main()

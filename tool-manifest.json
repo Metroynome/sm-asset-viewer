@@ -1,0 +1,27 @@
+{
+  "source": "Metroynome/test/sm/tools",
+  "included": [
+    "extract_symbols.py",
+    "audit_all_symbols.py",
+    "build_level_defs.py",
+    "sm_layout.py",
+    "export_rac5.py",
+    "update_rac5_regions.py",
+    "export_smtypes.py",
+    "extract_sm.py",
+    "index_assets.py",
+    "upstream/tjzip_dump.py"
+  ],
+  "changes": "Configurable workspace / RAC Levels paths; optional symbol demangler and opaque-type plan; selectable audit regions. Original files left unchanged.",
+  "excluded": {
+    "Ghidra session scripts": "Apply/repair/rename scripts depend on specific open programs and prior session plans; not extraction dependencies.",
+    "map_memory.py": "Historical loader-specific memory audit, not an extraction dependency.",
+    "upstream/tjzip_parser.py and wad_carve.py": "Alternate exploratory implementations; active extractor uses tjzip_dump.py."
+  },
+  "modelViewer": [
+    "models.py",
+    "animations.py",
+    "web/model-viewer.js",
+    "test_models.py"
+  ]
+}
