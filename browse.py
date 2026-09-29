@@ -11,12 +11,14 @@ import threading
 import functools
 import models
 import animations
+import levels
+from regions import detect_region
 import urllib.parse
 from pathlib import Path
 from formats import gim, png, vag_info, vag_wav, u32
 
 HERE=Path(__file__).resolve().parent
-NAMES={'01':'Pokitaru','02':'Ryllus','03':'Kalidon','04':'Metalis','05':'Dreamtime','06':'Medical Outpost Omega','07':'Challax','08':'Dayni Moon','09':'Inside Clank','10':'Quodrona','15':'Metalis — Giant Clank','16':'Island Escape','17':'Danger Valley','18':'Mega Cannons','19':'Moon Cow Disease','20':'Multiplayer Lobby','21':'Challax — Giant Clank','22':'Kalidon — Skyboard','23':'Medical Outpost — Skyboard','24':'HIG Treehouse'}
+NAMES={'12':'Template','01':'Pokitaru','02':'Ryllus','03':'Kalidon','04':'Metalis','05':'Dreamtime','06':'Medical Outpost Omega','07':'Challax','08':'Dayni Moon','09':'Inside Clank','10':'Quodrona','15':'Metalis — Giant Clank','16':'Island Escape','17':'Danger Valley','18':'Mega Cannons','19':'Moon Cow Disease','20':'Multiplayer Lobby','21':'Challax — Giant Clank','22':'Kalidon — Skyboard','23':'Medical Outpost — Skyboard','24':'HIG Treehouse'}
 
 
 def group(archive):
@@ -156,6 +158,9 @@ def upgrade_models(root, out, index):
 
 
 def serve(root,out,index,port):
+    index=dict(index,assets=[a for a in index['assets'] if a['category']!='Levels']+levels.catalog(index['assets']))
+    index['region']=detect_region((root/'disc/SYSTEM.CNF').read_text())
+    index['counts']=dict(collections.Counter(a['category'] for a in index['assets']))
     by_id={row['id']:row for row in index['assets']};lock=threading.Lock()
     textures=collections.defaultdict(list)
     for row in index['assets']:
@@ -176,6 +181,11 @@ def serve(root,out,index,port):
             choices=same or shared or (matches if len(matches)==1 else [])
             if choices:mat['textureUrl']='/asset/'+choices[0]['id']+'/png'
         return json.dumps(model,allow_nan=False,separators=(',',':')).encode()
+
+    level_lock=threading.Lock()
+    @functools.lru_cache(maxsize=1)
+    def level_data(key):
+        return levels.assemble(root,by_id[key],index['assets'],lambda key:json.loads(model_json(key)))
 
     class Handler(http.server.BaseHTTPRequestHandler):
         def log_message(self,*args):pass
@@ -200,11 +210,16 @@ def serve(root,out,index,port):
             path=urllib.parse.urlsplit(self.path).path
             try:
                 if path=='/':return self.send((HERE/'web/index.html').read_bytes(),'text/html; charset=utf-8')
-                if path=='/web/model-viewer.js':return self.send((HERE/'web/model-viewer.js').read_bytes(),'text/javascript; charset=utf-8')
+                if path in ('/web/model-viewer.js','/web/level-viewer.js'):return self.send((HERE/path.lstrip('/')).read_bytes(),'text/javascript; charset=utf-8')
                 if path=='/api/index':return self.send(json.dumps(index,ensure_ascii=False).encode(),'application/json; charset=utf-8')
-                match=re.fullmatch(r'/asset/([a-f0-9]{20})/(raw|png|wav|info|model|animation)',path)
+                match=re.fullmatch(r'/asset/([a-f0-9]{20})/(raw|png|wav|info|model|animation|level|level-bin)',path)
                 if not match or match[1] not in by_id:return self.send(b'Not found','text/plain',404)
                 row=by_id[match[1]];action=match[2]
+                if action in ('level','level-bin'):
+                    if row['category']!='Levels':raise ValueError('Not a level')
+                    with level_lock:data,binary=level_data(row['id'])
+                    return self.send(binary if action=='level-bin' else json.dumps(data,allow_nan=False).encode(),'application/octet-stream' if action=='level-bin' else 'application/json')
+                if action=='info' and row['category']=='Levels':return self.send(json.dumps(row).encode(),'application/json')
                 source=(root/row['source']).resolve();source.relative_to(root)
                 if action=='model':return self.send(model_json(row['id']),'application/json')
                 if action=='png':

@@ -6,6 +6,7 @@ import subprocess
 import sys
 
 TOOLS = {
+    'extract-regions': ('extract_regions.py', 'Extract and index NTSC-U, PAL, and NTSC-J ISOs'),
     'extract': ('extract_sm.py', 'ISO / HIG WAD extraction'),
     'audio-index': ('index_assets.py', 'VAGS.WAD extraction and embedded asset paths'),
     'browse': ('browse.py', 'Categorized browser, PNG and WAV previews'),

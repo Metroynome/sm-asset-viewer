@@ -10,7 +10,7 @@ For an existing extraction:
 python browse.py --root path/to/extracted
 ```
 
-To extract your own NTSC-U ISO into a new folder:
+The same extractor supports NTSC-U, PAL, and NTSC-J. To extract one ISO into a new folder:
 
 ```
 python extract_sm.py game.iso --output data/extracted
@@ -81,3 +81,22 @@ The NTSC-U extraction currently provides 2,000 decoded GDE model records (includ
 The preview uses the first material texture layer and simple lighting. Game-specific shader effects, transparency sorting, animation event callbacks and gameplay blending are not reproduced. Missing textures render shaded geometry. Animation matching uses asset names and bone-index bounds; the original game is the reference for unusual poses. No separate application, CDN, npm install or Ghidra connection is required to view assets.
 
 Decoder references: NTSC-U Pokitaru `LOADER_LoadGdeFile` / `LOAD_CHARACTER_SkinGdeFile`, `SKIN_DrawMesh`, animation loader at `00e772a8`, keyframe decoder at `00dd5420`, `ANIM_CreateOutputMatrices`, and alpha triangle renderer at `00dda818`. Tests: `python -m unittest discover -s . -p "test_*.py"`.
+
+## Regions and level previews
+
+Extract and index all three regions in one command (omit any region you do not have):
+
+```sh
+python tools.py extract-regions --ntscu "usa.iso" --pal "europe.iso" --ntscj "japan.iso" --output data
+```
+
+Disc IDs are checked before extraction. Output folders are `data/extracted`, `data/pal/extracted`, and `data/ntscj/extracted`. `--resume` compares existing disc files with the ISO before reusing them. Each region can be viewed separately:
+
+```sh
+python browse.py --root data/pal/extracted --out output/pal
+python browse.py --root data/ntscj/extracted --out output/ntscj
+```
+
+Select **Levels** in the sidebar and open a level. Drag to look, use WASD to fly, Space/Ctrl to rise/descend, Shift for faster movement, and the wheel to change speed. The preview includes terrain, sky, saved moby placements, props, and shrubs. Layers can be toggled independently; object search and Focus object help locate individual placements. Overview, Ground view, fullscreen, and Previous/Next are available.
+
+These are saved level previews: mobys use their bind pose, and gameplay scripts, runtime spawns, animation, lighting, fog, and secondary material effects are not simulated. Missing drawable references are listed in Assembly details. The regional template scene and skyboard scenes may contain little or no saved gameplay geometry.

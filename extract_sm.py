@@ -8,6 +8,7 @@ import json
 import struct
 import sys
 import zlib
+from regions import detect_region
 
 sys.path.insert(0, str(Path(__file__).parent / 'upstream'))
 import tjzip_dump as tj
@@ -160,6 +161,7 @@ def main():
             except Exception as exc:
                 report['errors'].append({'path': rel.as_posix(), 'error': str(exc)})
                 print(f'ERROR {rel}: {exc}', flush=True)
+    report['region']=detect_region((root/'disc/SYSTEM.CNF').read_text())
     manifest = root / 'manifest.json'
     if manifest.exists():
         previous = root / 'manifest.previous.json'

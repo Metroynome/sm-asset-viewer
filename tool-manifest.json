@@ -10,7 +10,9 @@
     "export_smtypes.py",
     "extract_sm.py",
     "index_assets.py",
-    "upstream/tjzip_dump.py"
+    "upstream/tjzip_dump.py",
+    "extract_regions.py",
+    "regions.py"
   ],
   "changes": "Configurable workspace / RAC Levels paths; optional symbol demangler and opaque-type plan; selectable audit regions. Original files left unchanged.",
   "excluded": {
@@ -23,5 +25,11 @@
     "animations.py",
     "web/model-viewer.js",
     "test_models.py"
+  ],
+  "levelViewer": [
+    "levels.py",
+    "web/level-viewer.js",
+    "test_levels.py",
+    "FORMAT_NOTES.md"
   ]
 }
