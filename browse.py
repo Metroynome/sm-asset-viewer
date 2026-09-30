@@ -201,6 +201,7 @@ def serve(root,out,index,port):
                         self.send_response(416);self.send_header('Content-Range',f'bytes */{len(data)}');self.end_headers();return
                     status=206
             self.send_response(status);self.send_header('Content-Type',kind);self.send_header('Content-Length',str(end-start+1));self.send_header('Accept-Ranges','bytes');self.send_header('X-Content-Type-Options','nosniff')
+            if kind.startswith(('text/html','text/javascript','application/json')):self.send_header('Cache-Control','no-store')
             if status==206:self.send_header('Content-Range',f'bytes {start}-{end}/{len(data)}')
             if filename:self.send_header('Content-Disposition',f'attachment; filename="{safe_name(filename)}"')
             self.end_headers()

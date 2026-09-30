@@ -51,7 +51,11 @@ def material_list(b):
         if layers and struct.unpack_from('<H',b,p+112)[0]:
             ti=struct.unpack_from('<H',b,p+116)[0]
             if ti<tc: signature=f'{u32(b,to+ti*20):08x}'
-        result.append(dict(name=name,textureSignature=signature))
+        # MATERIAL_Activate: GS ALPHA 0x44 / 0x48 / 0x42; alpha test >0 / >64.
+        flags=u32(b,p+104);blend=b[p+164] if layers else 0;test=b[p+165] if layers else 2
+        result.append(dict(name=name,textureSignature=signature,materialFlags=flags,
+            transparent=bool(flags&1),blendEquation=('alpha','add','subtract')[blend] if blend<3 else 'alpha',
+            alphaCutoff=0.5 if test==1 else 0 if test==0 else -1,layerCount=layers))
     return result
 
 
@@ -74,7 +78,12 @@ def packet_mesh(b, off, size, scale, material, skin=False, bones=None, scene=Fal
         if not indices: continue
         mesh=dict(positions=positions,indices=indices,material=material,
             uvs=[[v[0]/1024,v[1]/1024] for v in uv['values']] if uv else [],
-            colors=[[min(1,max(0,v/128)) for v in c[:3]] for c in color['values']] if color else [])
+            colors=[[(v&255)/128 for v in c[:3]] for c in color['values']] if color else [],
+            alphas=[min(1,(c[3]&255)/128) for c in color['values']] if color else [],bakedLighting=bool(color))
+        normal=next((x for x in streams if not scene and x['address']==2 and x['bits']==8),None)
+        if normal:
+            if len(normal['values'])!=n:raise ValueError('Normal count mismatch')
+            mesh['normals']=[[(v if v<128 else v-256)/127 for v in xyz[:3]] for xyz in normal['values']]
         if skin:
             weights=next((x for x in streams if x['address']==1 and x['bits']==8),None)
             if weights is None or len(weights['values'])!=n: raise ValueError('Missing skin weights')
@@ -92,13 +101,14 @@ def deferred_meshes(b, table, count, lod, part):
         p=table+i*32;n=struct.unpack_from('<H',b,p+16)[0];material=u32(b,p+20);off=u32(b,p+28)
         bounds(b,off,n*144)
         if not n:continue
-        positions=[];uvs=[];colors=[]
+        positions=[];uvs=[];colors=[];alphas=[]
         for j in range(n*3):
             q=off+j*48
             positions.append([v*0.01 for v in struct.unpack_from('<3f',b,q+32)])
             uvs.append(list(struct.unpack_from('<2f',b,q)))
-            colors.append([min(1,max(0,v/128)) for v in struct.unpack_from('<3f',b,q+16)])
-        result.append(dict(lod=lod,part=part,positions=positions,uvs=uvs,colors=colors,indices=list(range(n*3)),material=material,transparent=True))
+            colors.append([max(0,v/128) for v in struct.unpack_from('<3f',b,q+16)])
+            alphas.append(min(1,max(0,f32(b,q+28)/128)))
+        result.append(dict(lod=lod,part=part,positions=positions,uvs=uvs,colors=colors,alphas=alphas,indices=list(range(n*3)),material=material,transparent=True,bakedLighting=True))
     return result
 
 

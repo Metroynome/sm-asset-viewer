@@ -1,6 +1,6 @@
 import struct
 import unittest
-from models import packet_mesh, vif, decode, read_skeleton
+from models import packet_mesh, vif, decode, read_skeleton, material_list, deferred_meshes
 from animations import decode as animation
 
 
@@ -16,6 +16,23 @@ class ModelsTest(unittest.TestCase):
         self.assertEqual(mesh['indices'],[2,1,3])
         self.assertEqual(mesh['positions'][2],[1,0,0])
         with self.assertRaises(ValueError):list(vif(data,0,len(data)-8))
+
+    def test_vertex_rgba_and_signed_normals(self):
+        data=unpack(0x6e,2,[(0,127,0,0)]*3,'4b')+unpack(0x6e,3,[(255,128,64,32)]*3,'4B')+unpack(0x69,4,[(0,0,0),(1,0,0),(0,1,0)],'3h')
+        mesh=packet_mesh(data,0,len(data),1,0)[0]
+        self.assertEqual(mesh['colors'][0],[255/128,1,.5])
+        self.assertEqual(mesh['alphas'],[.25]*3)
+        self.assertEqual(mesh['normals'][0],[0,1,0])
+        self.assertTrue(mesh['bakedLighting'])
+
+    def test_ps2_material_and_deferred_alpha(self):
+        b=bytearray(600);struct.pack_into('<4I',b,8,1,64,0,0)
+        struct.pack_into('<II',b,64+104,1,1);b[64+164]=2;b[64+165]=1
+        mat=material_list(b)[0]
+        self.assertTrue(mat['transparent']);self.assertEqual(mat['blendEquation'],'subtract');self.assertEqual(mat['alphaCutoff'],.5)
+        struct.pack_into('<H',b,336,1);struct.pack_into('<I',b,348,368)
+        for i in range(3):struct.pack_into('<4f',b,368+i*48+16,128,128,128,64)
+        self.assertEqual(deferred_meshes(b,320,1,0,0)[0]['alphas'],[.5]*3)
 
     def test_skin_quantization_and_six_weights(self):
         data=unpack(0x6e,1,[(0,0,0,0)]*3,'4b')+unpack(0x6d,3,[(0,0,127,0)]*3,'4h')+unpack(0x69,5,[(16384,16384,16384),(18432,16384,16384),(16384,18432,16384)],'3h')
