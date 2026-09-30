@@ -159,6 +159,7 @@ def upgrade_models(root, out, index):
 
 def serve(root,out,index,port):
     index=dict(index,assets=[a for a in index['assets'] if a['category']!='Levels']+levels.catalog(index['assets']))
+    index['extractionRoot']=str(root.resolve())
     index['region']=detect_region((root/'disc/SYSTEM.CNF').read_text())
     index['counts']=dict(collections.Counter(a['category'] for a in index['assets']))
     by_id={row['id']:row for row in index['assets']};lock=threading.Lock()
@@ -242,7 +243,9 @@ def serve(root,out,index,port):
                         wave=vag_wav(raw);dest.parent.mkdir(exist_ok=True);dest.write_bytes(wave)
                 return self.send(dest.read_bytes(),'audio/wav')
             except (ValueError,KeyError,OSError,struct.error) as exc:self.send(str(exc).encode(),'text/plain; charset=utf-8',422)
-    server=http.server.ThreadingHTTPServer(('127.0.0.1',port),Handler)
+    class ViewerServer(http.server.ThreadingHTTPServer):
+        allow_reuse_address=False
+    server=ViewerServer(('127.0.0.1',port),Handler)
     print(f'Browse http://127.0.0.1:{server.server_port}  (Ctrl+C to stop)',flush=True)
     try:server.serve_forever()
     except KeyboardInterrupt:pass

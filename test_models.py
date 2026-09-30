@@ -17,6 +17,21 @@ class ModelsTest(unittest.TestCase):
         self.assertEqual(mesh['positions'][2],[1,0,0])
         with self.assertRaises(ValueError):list(vif(data,0,len(data)-8))
 
+    def test_scene_uv_quantization(self):
+        b=bytearray(320)
+        struct.pack_into('<2I',b,0,0x10001,0x10000000)
+        struct.pack_into('<I',b,28,64)
+        struct.pack_into('<If',b,64,3,1)
+        struct.pack_into('<2I',b,80,1,112)
+        struct.pack_into('<HHI',b,112,0,1,128)
+        struct.pack_into('<HHI',b,128,0,1,160)
+        packet=unpack(0x65,1,[(256,-128)]*3,'2h')+unpack(0x6d,3,[(0,0,0,0),(1,0,0,0),(0,1,0,0)],'4h')
+        struct.pack_into('<HI',b,162,len(packet),192)
+        b[192:192+len(packet)]=packet
+        self.assertEqual(decode(b)['meshes'][0]['uvs'],[[1,-.5]]*3)
+        # Other packet paths retain their separate 1/1024 scale.
+        self.assertEqual(packet_mesh(packet,0,len(packet),1,0,scene=True)[0]['uvs'],[[.25,-.125]]*3)
+
     def test_vertex_rgba_and_signed_normals(self):
         data=unpack(0x6e,2,[(0,127,0,0)]*3,'4b')+unpack(0x6e,3,[(255,128,64,32)]*3,'4B')+unpack(0x69,4,[(0,0,0),(1,0,0),(0,1,0)],'3h')
         mesh=packet_mesh(data,0,len(data),1,0)[0]

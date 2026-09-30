@@ -2,7 +2,11 @@
 
 Python 3.10+; no third-party packages. A standalone local asset viewer and extraction toolkit for Ratchet & Clank: Size Matters on PS2.
 
-Run `start.cmd` after extracting into `data/extracted`, then open http://127.0.0.1:8765. For another extraction directory, run `start.cmd --root "path/to/extracted"` or use the Python command below.
+Double-click `start.cmd` (or run `python launcher.py`). Choose an ISO and a new/empty extraction folder, then click **Extract and open**. The launcher detects NTSC-U, PAL or NTSC-J, extracts the disc/WADs and audio, builds previews, and opens the viewer automatically. Progress and errors appear in the launcher. Keep it open while browsing.
+
+Use **Open existing extraction** or **Recent folders** on subsequent launches; extraction is not repeated. Each extraction keeps its own preview cache in `.viewer/`, so regions stay separate. Native pickers use Python's standard Tkinter (included in the usual Windows Python installer; Linux distributions may package it separately).
+
+Command-line usage remains available: `start.cmd --root "path/to/extracted"`, or:
 
 For an existing extraction:
 

@@ -59,7 +59,7 @@ def material_list(b):
     return result
 
 
-def packet_mesh(b, off, size, scale, material, skin=False, bones=None, scene=False):
+def packet_mesh(b, off, size, scale, material, skin=False, bones=None, scene=False, uv_divisor=1024):
     meshes=[]
     for streams in vif(b, off, size):
         pos=next((x for x in streams if x['components']==(4 if scene else 3) and x['bits']==16),None)
@@ -77,7 +77,7 @@ def packet_mesh(b, off, size, scale, material, skin=False, bones=None, scene=Fal
             indices.extend(tri)
         if not indices: continue
         mesh=dict(positions=positions,indices=indices,material=material,
-            uvs=[[v[0]/1024,v[1]/1024] for v in uv['values']] if uv else [],
+            uvs=[[v[0]/uv_divisor,v[1]/uv_divisor] for v in uv['values']] if uv else [],
             colors=[[(v&255)/128 for v in c[:3]] for c in color['values']] if color else [],
             alphas=[min(1,(c[3]&255)/128) for c in color['values']] if color else [],bakedLighting=bool(color))
         normal=next((x for x in streams if not scene and x['address']==2 and x['bits']==8),None)
@@ -154,7 +154,9 @@ def decode(b):
                 for k in range(packets):
                     r=pt+k*24;size=struct.unpack_from('<H',b,r+2)[0]
                     if not size:continue
-                    decoded=packet_mesh(b,u32(b,r+4),size,scale,mat,scene=True)
+                    # GDEMESH_RenderStaticMeshSimple selects microcode 5 (staticmesh scissoring).
+                    # Its signed UV shorts use 1/256; tie/skin/shrub packets use 1/1024.
+                    decoded=packet_mesh(b,u32(b,r+4),size,scale,mat,scene=True,uv_divisor=256)
                     for m in decoded:m.update(lod=0,part=part)
                     meshes.extend(decoded)
                 q=part_table+j*16

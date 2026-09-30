@@ -19,3 +19,9 @@ The WebGL2 level renderer shares mesh buffers between placements. Its binary res
 - `WaterWaves` type signature 0x49742992 uses custom rendering at 0x1c6690, not its saved moby transform. The loops at 0x1c6d78 build a 6x6 grid around the player, spaced by 100*.7. PVar +0 scales wave height; moby Y supplies the water height. The same initial constants occur in LEVEL_01/16 in all three regions. The preview follows the free camera with this grid at initial wave scale; time-dependent scaling, LOD switching, reflection mapping and UV scrolling remain unimplemented.
 
 Transparent world packets are sorted back-to-front using their transformed centers and do not write depth. This is an approximation of the game's alpha sorter, not exact triangle sorting. Backface culling remains disabled pending verification of each VU draw path. These are visual previews, not an emulation of the PS2 renderer.
+
+## UV verification against boot microcode
+
+`GDEMESH_RenderStaticMeshSimple` (NTSC-U 0x01e86850) renders variant 0x10000000 with microcode index 5. `MICROCODE_TABLE` at 0x01ef5750 maps that index to `staticmesh_vu_renderer_scissoring` at 0x01f034c0. Its VU instructions convert signed UV shorts and multiply by 0.00390625 (1/256). The decoder previously used 1/1024, stretching terrain and sky textures fourfold. Variant 0x10000004 is the tie path, despite its historical "static" decoder label; it must retain 1/1024, as do shrub and skin packets. Deferred float UVs are already decoded and need no quantization scale.
+
+The audit assembled all 74 indexed regional level archives (24 NTSC-U, 25 PAL, 25 NTSC-J) without exceptions. This is a structural check, not a claim that every level matches gameplay visually. Missing/runtime geometry and the render-state limitations above remain applicable.
