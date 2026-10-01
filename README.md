@@ -24,7 +24,7 @@ python browse.py --root data/extracted
 
 Use `--rebuild` after changing the source files, `--out path` to relocate the generated catalog/cache, or `--build-only` to export PNGs without running a server. The browser binds only to 127.0.0.1.
 
-The folder is self-contained. Share the scripts and web folder; generated assets, audio and the ISO are not bundled with the tools. `output/` contains the searchable JSON index, categorized PNG exports and on-demand WAV cache.
+The repository is self-contained: download or clone the entire `sm-asset-viewer` repo and run `start.cmd`. Keep `upstream/` and `web/` with the Python files. The launcher, ISO/WAD and audio extractors, TJZIP decoder, asset indexer, and level/moby/animation/texture/audio viewer are all included. No Metroynome checkout, sibling tools folder, Ghidra, Docker, npm, or third-party Python packages are needed. Users only need Python 3.10+ with Tkinter and their game ISO. Generated assets, audio and the ISO are not bundled with the tools. `output/` contains the searchable JSON index, categorized PNG exports and on-demand WAV cache.
 
 Supported previews: little-endian GIM base images and standard mono VAGp streams. Supported PS2 GDE models render directly in the viewer, including scene geometry, static objects, shrubs and skinned characters. Matching ANIM v15 banks play on the model with clip selection, play/pause, scrubbing and playback speed. Collision, sound-bank metadata, videos and ELF/REL binaries remain raw downloads. Audio stream-to-level mapping is unverified. Names truncated in the original WAD remain truncated.
 

@@ -1,5 +1,5 @@
 """Extract a PS2 Size Matters ISO and checksum-verify HIG/TJZIP archives.
-Uses electrogecko's reviewed TJZIP token decoder (tools/upstream/tjzip_dump.py).
+Uses electrogecko's reviewed TJZIP token decoder (upstream/tjzip_dump.py).
 """
 from pathlib import Path
 import argparse

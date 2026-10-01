@@ -31,5 +31,27 @@
     "web/level-viewer.js",
     "test_levels.py",
     "FORMAT_NOTES.md"
-  ]
+  ],
+  "runtime": [
+    "start.cmd",
+    "launcher.py",
+    "extract_sm.py",
+    "extract_regions.py",
+    "index_assets.py",
+    "regions.py",
+    "upstream/tjzip_dump.py",
+    "browse.py",
+    "formats.py",
+    "models.py",
+    "animations.py",
+    "levels.py",
+    "web/index.html",
+    "web/model-viewer.js",
+    "web/level-viewer.js"
+  ],
+  "requirements": {
+    "python": "3.10+ with Tkinter for the launcher",
+    "thirdPartyPythonPackages": [],
+    "userSupplied": "Size Matters PS2 ISO (NTSC-U, PAL or NTSC-J)"
+  }
 }

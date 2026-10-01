@@ -170,8 +170,8 @@ main definitions remain empty and entrypoints null until loaded bases are verifi
 Detailed regional ELF/REL metadata is in ../rac-defs-sm-metadata.json. The legacy
 top-level metadata fields refer to NTSC-U; additional regions live under regions.
 
-Repeat with `python test/sm/tools/export_rac5.py --output NEW_DIRECTORY` from
-Metroynome. To add/update verified regional exports in an existing directory,
+Repeat with `python export_rac5.py --output NEW_DIRECTORY` from
+the sm-asset-viewer folder. To add/update verified regional exports in an existing directory,
 pass --append; differing existing binaries are rejected, and manifests refreshed.
 """
 
